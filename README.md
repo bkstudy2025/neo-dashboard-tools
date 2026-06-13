@@ -21,6 +21,15 @@ auf dem Server** unter `config/neo_dashboard_modules/` und stellt sie dem Fronte
 Danach erkennt das Neo Dashboard Kit die Integration automatisch und speichert
 Module über sie (statt im YAML).
 
+## Übersicht in Geräte & Dienste
+
+Die Integration legt ein Gerät **Neo Dashboard Tools** mit einem Sensor **Module** an.
+Dort siehst du auf einen Blick:
+- **Status** = Anzahl installierter Module
+- **Attribute** = Liste aller Module mit `name`, `type`, `version`, `author`, `file`
+
+So behältst du den Überblick, welche Module (Premium/Community) eingespielt sind.
+
 ## WebSocket-API
 
 | Befehl | Beschreibung | Rechte |
