@@ -3,57 +3,11 @@
     "step": {
       "user": {
         "title": "Neo Dashboard Tools",
-        "description": "Speichert Neo-Dashboard-Module dateibasiert auf dem Server."
+        "description": "Speichert Neo-Dashboard-Module dateibasiert auf dem Server. Die Verwaltung erfolgt im Dashboard (Neo Card → Module verwalten)."
       }
     },
     "abort": {
       "already_configured": "Neo Dashboard Tools ist bereits eingerichtet."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Module verwalten",
-        "menu_options": {
-          "add_module": "Neues Modul hinzufügen",
-          "edit_module": "Modul bearbeiten",
-          "remove_module": "Modul entfernen"
-        }
-      },
-      "add_module": {
-        "title": "Neues Modul",
-        "description": "Karten-Code (z.B. von Patreon) einfügen. Name leer = automatisch aus dem Code.",
-        "data": {
-          "name": "Name (optional)",
-          "code": "Modul-Code"
-        }
-      },
-      "edit_module": {
-        "title": "Modul bearbeiten",
-        "description": "Welches Modul möchtest du bearbeiten?",
-        "data": {
-          "module": "Modul"
-        }
-      },
-      "edit_save": {
-        "title": "Modul bearbeiten",
-        "description": "Code von {name} — anpassen und speichern. Leeren = löschen.",
-        "data": {
-          "code": "Modul-Code"
-        }
-      },
-      "remove_module": {
-        "title": "Modul entfernen",
-        "data": {
-          "module": "Modul"
-        }
-      }
-    },
-    "error": {
-      "empty_code": "Bitte Code einfügen."
-    },
-    "abort": {
-      "no_modules": "Es sind keine Module installiert."
     }
   }
 }
