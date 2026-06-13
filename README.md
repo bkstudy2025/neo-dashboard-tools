@@ -1,4 +1,8 @@
-# Neo Dashboard Tools
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bkstudy2025/neo-dashboard-tools/main/logo.png" width="170" alt="Neo Dashboard Tools" />
+</p>
+
+<h1 align="center">Neo Dashboard Tools</h1>
 
 Companion-Integration für das [Neo Dashboard Kit](https://github.com/bkstudy2025/neo-dashboard-kit).
 
