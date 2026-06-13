@@ -1,4 +1,8 @@
-"""Sensor exposing the installed Neo Dashboard modules."""
+"""Sensors for Neo Dashboard Tools.
+
+- One summary sensor: number of installed modules.
+- One diagnostic sensor per module: shows version + type/author/file.
+"""
 from __future__ import annotations
 
 import re
@@ -7,6 +11,7 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import _read_all
@@ -18,14 +23,43 @@ _RE_VERSION = re.compile(r"""version\s*:\s*["'`]([^"'`]+)["'`]""")
 _RE_AUTHOR = re.compile(r"""author\s*:\s*["'`]([^"'`]+)["'`]""")
 
 
+def _parse(module: dict) -> dict:
+    """Extract metadata from a stored module {name(file), code}."""
+    code = module.get("code", "")
+    types = _RE_REGISTER.findall(code)
+    nm = _RE_NAME.search(code)
+    ver = _RE_VERSION.search(code)
+    auth = _RE_AUTHOR.search(code)
+    return {
+        "file": module["name"],
+        "name": nm.group(1) if nm else module["name"],
+        "type": types[0] if types else module["name"],
+        "version": ver.group(1) if ver else None,
+        "author": auth.group(1) if auth else None,
+    }
+
+
+def _device_info(entry: ConfigEntry) -> dict:
+    return {
+        "identifiers": {(DOMAIN, entry.entry_id)},
+        "name": "Neo Dashboard Tools",
+        "manufacturer": "Neo Dashboard Kit",
+    }
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     async_add_entities([NeoModulesSensor(hass, entry)])
+    manager = _ModuleEntityManager(hass, entry, async_add_entities)
+    await manager.async_refresh()
+    entry.async_on_unload(
+        async_dispatcher_connect(hass, SIGNAL_UPDATE, manager.schedule_refresh)
+    )
 
 
 class NeoModulesSensor(SensorEntity):
-    """Shows how many Neo Dashboard modules are installed + their details."""
+    """Summary: how many modules are installed (with the full list as attributes)."""
 
     _attr_has_entity_name = True
     _attr_name = "Module"
@@ -34,11 +68,7 @@ class NeoModulesSensor(SensorEntity):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass
         self._attr_unique_id = f"{entry.entry_id}_modules"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "Neo Dashboard Tools",
-            "manufacturer": "Neo Dashboard Kit",
-        }
+        self._attr_device_info = _device_info(entry)
         self._modules: list[dict] = []
 
     async def async_added_to_hass(self) -> None:
@@ -53,23 +83,7 @@ class NeoModulesSensor(SensorEntity):
 
     async def _scan(self) -> None:
         raw = await self.hass.async_add_executor_job(_read_all, self.hass)
-        modules = []
-        for m in raw:
-            code = m.get("code", "")
-            types = _RE_REGISTER.findall(code)
-            name_match = _RE_NAME.search(code)
-            ver_match = _RE_VERSION.search(code)
-            author_match = _RE_AUTHOR.search(code)
-            modules.append(
-                {
-                    "name": name_match.group(1) if name_match else m["name"],
-                    "type": types[0] if types else m["name"],
-                    "version": ver_match.group(1) if ver_match else None,
-                    "author": author_match.group(1) if author_match else None,
-                    "file": f"{m['name']}.js",
-                }
-            )
-        self._modules = modules
+        self._modules = [_parse(m) for m in raw]
         self.async_write_ha_state()
 
     @property
@@ -78,8 +92,75 @@ class NeoModulesSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
+        return {"count": len(self._modules), "modules": self._modules}
+
+
+class NeoModuleSensor(SensorEntity):
+    """One per module — state = version, attributes = details."""
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:puzzle-outline"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, meta: dict) -> None:
+        self.hass = hass
+        self._file = meta["file"]
+        self._meta = meta
+        self._attr_unique_id = f"{entry.entry_id}_mod_{meta['file']}"
+        self._attr_name = meta["name"]
+        self._attr_device_info = _device_info(entry)
+
+    def update_meta(self, meta: dict) -> None:
+        self._meta = meta
+        self._attr_name = meta["name"]
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> str:
+        return self._meta.get("version") or "installiert"
+
+    @property
+    def extra_state_attributes(self) -> dict:
         return {
-            "count": len(self._modules),
-            "modules": self._modules,
-            "names": [m["name"] for m in self._modules],
+            "type": self._meta.get("type"),
+            "author": self._meta.get("author"),
+            "version": self._meta.get("version"),
+            "file": f"{self._meta.get('file')}.js",
         }
+
+
+class _ModuleEntityManager:
+    """Creates/updates/removes a sensor per installed module."""
+
+    def __init__(self, hass, entry, async_add_entities) -> None:
+        self.hass = hass
+        self.entry = entry
+        self._add = async_add_entities
+        self._entities: dict[str, NeoModuleSensor] = {}
+
+    @callback
+    def schedule_refresh(self) -> None:
+        self.hass.async_create_task(self.async_refresh())
+
+    async def async_refresh(self) -> None:
+        raw = await self.hass.async_add_executor_job(_read_all, self.hass)
+        current = {m["name"]: _parse(m) for m in raw}
+
+        # Add new + update existing
+        new_entities = []
+        for file, meta in current.items():
+            ent = self._entities.get(file)
+            if ent is None:
+                ent = NeoModuleSensor(self.hass, self.entry, meta)
+                self._entities[file] = ent
+                new_entities.append(ent)
+            else:
+                ent.update_meta(meta)
+        if new_entities:
+            self._add(new_entities)
+
+        # Remove modules that no longer exist
+        for file in list(self._entities):
+            if file not in current:
+                ent = self._entities.pop(file)
+                await ent.async_remove(force_remove=True)
