@@ -6,15 +6,18 @@ WebSocket commands so the dashboard config stays clean.
 """
 from __future__ import annotations
 
+import asyncio
 import glob
 import logging
 import os
 
+import aiohttp
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.typing import ConfigType
 
@@ -74,6 +77,7 @@ def _register_ws(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_list)
     websocket_api.async_register_command(hass, ws_save)
     websocket_api.async_register_command(hass, ws_delete)
+    websocket_api.async_register_command(hass, ws_fetch)
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/list"})
@@ -124,3 +128,29 @@ async def ws_delete(hass, connection, msg):
     await hass.async_add_executor_job(_rm)
     async_dispatcher_send(hass, SIGNAL_UPDATE)
     connection.send_result(msg["id"], {})
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/fetch", vol.Required("url"): str}
+)
+@websocket_api.async_response
+async def ws_fetch(hass, connection, msg):
+    """Fetch text from an https URL server-side (avoids browser CORS).
+
+    Used by the Module Store to load the index + module code from GitHub.
+    """
+    url = msg["url"]
+    if not url.startswith("https://"):
+        connection.send_error(msg["id"], "invalid_url", "Nur https-URLs erlaubt.")
+        return
+    try:
+        session = async_get_clientsession(hass)
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            if resp.status != 200:
+                connection.send_error(msg["id"], "fetch_failed", f"HTTP {resp.status}")
+                return
+            content = await resp.text()
+        connection.send_result(msg["id"], {"content": content})
+    except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        connection.send_error(msg["id"], "fetch_failed", str(err))
