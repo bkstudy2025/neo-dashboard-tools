@@ -51,6 +51,14 @@ def _delete_module(hass, name: str) -> None:
         os.remove(path)
 
 
+def _read_module(hass, name: str) -> str:
+    path = os.path.join(_modules_dir(hass), f"{_safe(name)}.js")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as fh:
+            return fh.read()
+    return ""
+
+
 class NeoDashboardToolsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Single-instance config flow — just creates the entry."""
 
@@ -68,11 +76,18 @@ class NeoDashboardToolsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class NeoOptionsFlow(config_entries.OptionsFlow):
-    """Add / remove modules from Devices & Services → Configure."""
+    """Add / edit / remove modules from Devices & Services → Configure."""
+
+    def __init__(self) -> None:
+        self._edit_name: str | None = None
 
     async def async_step_init(self, user_input=None):
-        return self.async_show_menu(step_id="init", menu_options=["add_module", "remove_module"])
+        return self.async_show_menu(
+            step_id="init",
+            menu_options=["add_module", "edit_module", "remove_module"],
+        )
 
+    # ── Add new ────────────────────────────────────────────────
     async def async_step_add_module(self, user_input=None):
         errors = {}
         if user_input is not None:
@@ -98,6 +113,47 @@ class NeoOptionsFlow(config_entries.OptionsFlow):
         )
         return self.async_show_form(step_id="add_module", data_schema=schema, errors=errors)
 
+    # ── Edit existing (prefills the code so it's visible) ───────
+    async def async_step_edit_module(self, user_input=None):
+        names = await self.hass.async_add_executor_job(_module_names, self.hass)
+        if not names:
+            return self.async_abort(reason="no_modules")
+        if user_input is not None:
+            self._edit_name = user_input["module"]
+            return await self.async_step_edit_save()
+        schema = vol.Schema(
+            {
+                vol.Required("module"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=names, mode=selector.SelectSelectorMode.DROPDOWN
+                    )
+                )
+            }
+        )
+        return self.async_show_form(step_id="edit_module", data_schema=schema)
+
+    async def async_step_edit_save(self, user_input=None):
+        if user_input is not None:
+            code = (user_input.get("code") or "").strip()
+            if not code:
+                # empty code on edit → delete the module
+                await self.hass.async_add_executor_job(_delete_module, self.hass, self._edit_name)
+            else:
+                await self.hass.async_add_executor_job(_write_module, self.hass, self._edit_name, code)
+            async_dispatcher_send(self.hass, SIGNAL_UPDATE)
+            return self.async_create_entry(title="", data={})
+
+        existing = await self.hass.async_add_executor_job(_read_module, self.hass, self._edit_name)
+        schema = vol.Schema(
+            {vol.Required("code"): selector.TextSelector(selector.TextSelectorConfig(multiline=True))}
+        )
+        return self.async_show_form(
+            step_id="edit_save",
+            data_schema=self.add_suggested_values_to_schema(schema, {"code": existing}),
+            description_placeholders={"name": self._edit_name or ""},
+        )
+
+    # ── Remove ─────────────────────────────────────────────────
     async def async_step_remove_module(self, user_input=None):
         names = await self.hass.async_add_executor_job(_module_names, self.hass)
         if not names:

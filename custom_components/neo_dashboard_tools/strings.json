@@ -15,15 +15,30 @@
       "init": {
         "title": "Module verwalten",
         "menu_options": {
-          "add_module": "Modul hinzufügen / aktualisieren",
+          "add_module": "Neues Modul hinzufügen",
+          "edit_module": "Modul bearbeiten",
           "remove_module": "Modul entfernen"
         }
       },
       "add_module": {
-        "title": "Modul hinzufügen",
+        "title": "Neues Modul",
         "description": "Karten-Code (z.B. von Patreon) einfügen. Name leer = automatisch aus dem Code.",
         "data": {
           "name": "Name (optional)",
+          "code": "Modul-Code"
+        }
+      },
+      "edit_module": {
+        "title": "Modul bearbeiten",
+        "description": "Welches Modul möchtest du bearbeiten?",
+        "data": {
+          "module": "Modul"
+        }
+      },
+      "edit_save": {
+        "title": "Modul bearbeiten",
+        "description": "Code von {name} — anpassen und speichern. Leeren = löschen.",
+        "data": {
           "code": "Modul-Code"
         }
       },
