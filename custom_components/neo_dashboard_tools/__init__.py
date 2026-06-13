@@ -15,11 +15,14 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.typing import ConfigType
 
-from .const import DOMAIN, MODULES_DIR
+from .const import DOMAIN, MODULES_DIR, SIGNAL_UPDATE
 
 _LOGGER = logging.getLogger(__name__)
+
+PLATFORMS = ["sensor"]
 
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
 
@@ -54,13 +57,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up via UI config entry (no extra work needed)."""
+    """Set up via UI config entry — register WS API and the sensor."""
     _register_ws(hass)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    return True
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 def _register_ws(hass: HomeAssistant) -> None:
@@ -99,6 +103,7 @@ async def ws_save(hass, connection, msg):
             fh.write(code)
 
     await hass.async_add_executor_job(_write)
+    async_dispatcher_send(hass, SIGNAL_UPDATE)
     connection.send_result(msg["id"], {"name": name})
 
 
@@ -117,4 +122,5 @@ async def ws_delete(hass, connection, msg):
             os.remove(path)
 
     await hass.async_add_executor_job(_rm)
+    async_dispatcher_send(hass, SIGNAL_UPDATE)
     connection.send_result(msg["id"], {})
