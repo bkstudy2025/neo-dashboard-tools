@@ -1,7 +1,7 @@
 {
   "domain": "neo_dashboard_tools",
   "name": "Neo Dashboard Tools",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "documentation": "https://github.com/bkstudy2025/neo-dashboard-tools",
   "issue_tracker": "https://github.com/bkstudy2025/neo-dashboard-tools/issues",
   "codeowners": ["@bkstudy2025"],

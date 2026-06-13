@@ -17,26 +17,36 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import _read_all
 from .const import DOMAIN, SIGNAL_UPDATE
 
+# Capture the registerCard(...) call WITH its meta object so we read the real
+# card name/version/author — not some unrelated `name:` field elsewhere in code.
+_RE_REG_META = re.compile(
+    r"""registerCard\(\s*["'`]([\w-]+)["'`]\s*,\s*[A-Za-z_$][\w$]*\s*,\s*\{([^{}]*)\}"""
+)
 _RE_REGISTER = re.compile(r"""registerCard\(\s*["'`]([\w-]+)["'`]""")
-_RE_NAME = re.compile(r"""name\s*:\s*["'`]([^"'`]+)["'`]""")
-_RE_VERSION = re.compile(r"""version\s*:\s*["'`]([^"'`]+)["'`]""")
-_RE_AUTHOR = re.compile(r"""author\s*:\s*["'`]([^"'`]+)["'`]""")
+
+
+def _field(body: str, key: str):
+    m = re.search(key + r"""\s*:\s*["'`]([^"'`]+)["'`]""", body)
+    return m.group(1) if m else None
 
 
 def _parse(module: dict) -> dict:
     """Extract metadata from a stored module {name(file), code}."""
     code = module.get("code", "")
-    types = _RE_REGISTER.findall(code)
-    nm = _RE_NAME.search(code)
-    ver = _RE_VERSION.search(code)
-    auth = _RE_AUTHOR.search(code)
-    return {
-        "file": module["name"],
-        "name": nm.group(1) if nm else module["name"],
-        "type": types[0] if types else module["name"],
-        "version": ver.group(1) if ver else None,
-        "author": auth.group(1) if auth else None,
-    }
+    file = module["name"]
+    meta = _RE_REG_META.search(code)
+    if meta:
+        typ, body = meta.group(1), meta.group(2)
+        return {
+            "file": file,
+            "type": typ,
+            "name": _field(body, "name") or typ,
+            "version": _field(body, "version"),
+            "author": _field(body, "author"),
+        }
+    fallback = _RE_REGISTER.search(code)
+    typ = fallback.group(1) if fallback else file
+    return {"file": file, "type": typ, "name": typ, "version": None, "author": None}
 
 
 def _device_info(entry: ConfigEntry) -> dict:
