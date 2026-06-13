@@ -23,12 +23,20 @@ Module über sie (statt im YAML).
 
 ## Übersicht in Geräte & Dienste
 
-Die Integration legt ein Gerät **Neo Dashboard Tools** mit einem Sensor **Module** an.
-Dort siehst du auf einen Blick:
-- **Status** = Anzahl installierter Module
-- **Attribute** = Liste aller Module mit `name`, `type`, `version`, `author`, `file`
+Die Integration legt ein Gerät **Neo Dashboard Tools** an mit:
 
-So behältst du den Überblick, welche Module (Premium/Community) eingespielt sind.
+- **Sensor „Module"** — Status = Anzahl installierter Module, Attribute = vollständige Liste
+- **Je ein Sensor pro Modul** (Diagnose) — Status = Version, Attribute = `type`, `author`, `version`, `file`
+
+So siehst du auf einen Blick, welche Module (Premium/Community) in welcher Version
+installiert sind.
+
+## Module verwalten
+
+**Konfigurieren** (am Gerät/Eintrag) → Menü:
+- **Neues Modul hinzufügen** — Code einfügen
+- **Modul bearbeiten** — vorhandenen Code ansehen/ändern (wird vorgeladen)
+- **Modul entfernen**
 
 ## WebSocket-API
 
