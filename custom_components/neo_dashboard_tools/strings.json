@@ -3,11 +3,11 @@
     "step": {
       "user": {
         "title": "Neo Dashboard Tools",
-        "description": "Speichert Neo-Dashboard-Module dateibasiert auf dem Server. Die Verwaltung erfolgt im Dashboard (Neo Card → Module verwalten)."
+        "description": "Stores Neo Dashboard modules as files on the server. Manage them in your dashboard (Neo Card → Extensions)."
       }
     },
     "abort": {
-      "already_configured": "Neo Dashboard Tools ist bereits eingerichtet."
+      "already_configured": "Neo Dashboard Tools is already configured."
     }
   }
 }
