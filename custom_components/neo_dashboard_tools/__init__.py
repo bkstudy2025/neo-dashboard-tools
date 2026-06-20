@@ -17,6 +17,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.typing import ConfigType
@@ -60,10 +61,28 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up via UI config entry — register WS API and the sensor."""
+    """Set up via UI config entry — register WS API and the sensors."""
     _register_ws(hass)
+    _cleanup_stale_entities(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+def _cleanup_stale_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove orphaned entity-registry entries from older versions.
+
+    Bis v0.3.0 wurde EINE Diagnose-Entity pro installiertem Modul/Karte angelegt
+    (unique_id '<entry>_mod_<datei>'). Diese alten Einträge (z. B. „Neo Klima",
+    „Neo Kamera", …) bleiben sonst als verwaiste Registry-Einträge sichtbar.
+    Wir behalten nur die aktuellen Summary-Sensoren und entfernen den Rest —
+    automatisch beim Laden der Integration, ohne manuelles Aufräumen.
+    """
+    registry = er.async_get(hass)
+    valid = {f"{entry.entry_id}_modules", f"{entry.entry_id}_version"}
+    for ent in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if ent.unique_id not in valid:
+            _LOGGER.info("Removing stale Neo diagnostic entity: %s", ent.entity_id)
+            registry.async_remove(ent.entity_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

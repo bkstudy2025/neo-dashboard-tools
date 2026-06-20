@@ -27,13 +27,18 @@ Module über sie (statt im YAML).
 
 ## Übersicht in Geräte & Dienste
 
-Die Integration legt ein Gerät **Neo Dashboard Tools** an mit:
+Die Integration legt ein Gerät **Neo Dashboard Tools** an mit **zwei** zusammengefassten
+Diagnose-Sensoren:
 
-- **Sensor „Module"** — Status = Anzahl installierter Module, Attribute = vollständige Liste
-- **Je ein Sensor pro Modul** (Diagnose) — Status = Version, Attribute = `type`, `author`, `version`, `file`
+- **„Module"** — Status = Anzahl installierter Module, Attribute = vollständige Liste
+  (`type`, `name`, `version`, `author`, `file` je Modul)
+- **„Version"** — installierte Integrations-Version
 
-So siehst du auf einen Blick, welche Module (Premium/Community) in welcher Version
-installiert sind.
+> **Hinweis (ab v0.3.1):** Frühere Versionen legten **eine Diagnose-Entity pro Karte/Modul**
+> an. Das wurde durch die beiden Summary-Sensoren ersetzt. Alte, nicht mehr gültige
+> Entitäten (z. B. „Neo Klima", „Neo Kamera", „Neo Kalender" …) werden beim Laden der
+> Integration **automatisch aus der Entity-Registry entfernt** — einmal **Integration neu
+> laden** bzw. **Home Assistant neu starten** genügt, kein manuelles Aufräumen nötig.
 
 ## Module verwalten
 
