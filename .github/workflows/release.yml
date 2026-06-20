@@ -1,0 +1,46 @@
+name: Release
+
+# Erstellt automatisch ein GitHub-Release, sobald sich die Version in der
+# manifest.json auf main ändert (HACS liest die Version aus dem Release-Tag).
+# Idempotent: existiert das Release zur aktuellen Version bereits, passiert nichts.
+# Enthält die Version "beta"/"alpha"/"rc", wird es als Pre-Release markiert.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version aus manifest.json lesen
+        id: v
+        run: echo "version=$(jq -r .version custom_components/neo_dashboard_tools/manifest.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Release erstellen (falls noch nicht vorhanden)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="v${{ steps.v.outputs.version }}"
+
+          if gh release view "$version" >/dev/null 2>&1; then
+            echo "Release $version existiert bereits — übersprungen."
+            exit 0
+          fi
+
+          prerelease=""
+          case "$version" in
+            *beta*|*alpha*|*rc*) prerelease="--prerelease" ;;
+          esac
+
+          gh release create "$version" \
+            --target "${{ github.sha }}" \
+            --title "$version" \
+            --notes "Automatisch erstelltes Release für $version." \
+            $prerelease
+          echo "Release $version erstellt${prerelease:+ (Pre-Release)}."
