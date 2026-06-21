@@ -10,6 +10,7 @@ import asyncio
 import glob
 import logging
 import os
+from urllib.parse import urlparse
 
 import aiohttp
 import voluptuous as vol
@@ -27,6 +28,28 @@ from .const import DOMAIN, MODULES_DIR, SIGNAL_UPDATE
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["sensor"]
+
+# --- Server-side fetch/save safety limits ----------------------------------
+# The fetch proxy only exists to load the curated store index + module/card
+# files from GitHub for the frontend (avoids browser CORS). Keep it tightly
+# scoped so it cannot be used as a generic SSRF proxy.
+MAX_FETCH_SIZE = 1_048_576  # 1 MiB — store index / module file response cap
+MAX_MODULE_SIZE = 1_048_576  # 1 MiB — saved module/card code cap
+ALLOWED_FETCH_HOSTS = frozenset({"raw.githubusercontent.com", "cdn.jsdelivr.net"})
+# Exact content-types accepted in addition to any "text/*" type.
+ALLOWED_CONTENT_TYPES = frozenset(
+    {
+        "application/json",
+        "application/javascript",
+        "application/x-javascript",
+        "text/javascript",
+    }
+)
+
+
+def _content_type_allowed(content_type: str) -> bool:
+    ctype = (content_type or "").split(";", 1)[0].strip().lower()
+    return ctype.startswith("text/") or ctype in ALLOWED_CONTENT_TYPES
 
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
 
@@ -121,6 +144,12 @@ async def ws_save(hass, connection, msg):
     name = _safe_name(msg["name"])
     code = msg["code"]
 
+    if len(code.encode("utf-8")) > MAX_MODULE_SIZE:
+        connection.send_error(
+            msg["id"], "too_large", f"Modul-Code überschreitet {MAX_MODULE_SIZE} Bytes."
+        )
+        return
+
     def _write() -> None:
         with open(os.path.join(_modules_dir(hass), f"{name}.js"), "w", encoding="utf-8") as fh:
             fh.write(code)
@@ -155,21 +184,47 @@ async def ws_delete(hass, connection, msg):
 )
 @websocket_api.async_response
 async def ws_fetch(hass, connection, msg):
-    """Fetch text from an https URL server-side (avoids browser CORS).
+    """Fetch text from an allowed https URL server-side (avoids browser CORS).
 
-    Used by the Module Store to load the index + module code from GitHub.
+    Used by the store to load the index + card/module code from GitHub
+    (raw.githubusercontent.com) and jsDelivr. Tightly scoped: https only,
+    host allowlist, no redirects, content-type and size limits — so it cannot
+    be misused as a generic proxy.
     """
     url = msg["url"]
-    if not url.startswith("https://"):
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname:
         connection.send_error(msg["id"], "invalid_url", "Nur https-URLs erlaubt.")
+        return
+    if parsed.hostname not in ALLOWED_FETCH_HOSTS:
+        connection.send_error(
+            msg["id"], "host_not_allowed", f"Host nicht erlaubt: {parsed.hostname}"
+        )
         return
     try:
         session = async_get_clientsession(hass)
-        async with session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+        async with session.get(
+            url,
+            timeout=aiohttp.ClientTimeout(total=15),
+            allow_redirects=False,
+        ) as resp:
             if resp.status != 200:
                 connection.send_error(msg["id"], "fetch_failed", f"HTTP {resp.status}")
                 return
-            content = await resp.text()
+            if not _content_type_allowed(resp.headers.get("Content-Type", "")):
+                connection.send_error(
+                    msg["id"],
+                    "invalid_content_type",
+                    f"Content-Type nicht erlaubt: {resp.headers.get('Content-Type', '')}",
+                )
+                return
+            raw = await resp.content.read(MAX_FETCH_SIZE + 1)
+            if len(raw) > MAX_FETCH_SIZE:
+                connection.send_error(
+                    msg["id"], "too_large", f"Antwort überschreitet {MAX_FETCH_SIZE} Bytes."
+                )
+                return
+            content = raw.decode("utf-8", errors="replace")
         connection.send_result(msg["id"], {"content": content})
     except (aiohttp.ClientError, asyncio.TimeoutError) as err:
         connection.send_error(msg["id"], "fetch_failed", str(err))
