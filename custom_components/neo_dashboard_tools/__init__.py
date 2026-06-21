@@ -10,6 +10,7 @@ import asyncio
 import glob
 import logging
 import os
+import re
 from urllib.parse import urlparse
 
 import aiohttp
@@ -50,6 +51,24 @@ ALLOWED_CONTENT_TYPES = frozenset(
 def _content_type_allowed(content_type: str) -> bool:
     ctype = (content_type or "").split(";", 1)[0].strip().lower()
     return ctype.startswith("text/") or ctype in ALLOWED_CONTENT_TYPES
+
+
+# Per-host path allowlist: scope the proxy to this repo's store only, so it
+# cannot fetch foreign repos/paths even on an allowed host.
+# raw: only the live store index. jsDelivr: only store module/card .js files
+# (any ref, e.g. @main).
+_RAW_INDEX_PATH = "/bkstudy2025/neo-dashboard-kit/main/store/index.json"
+_JSDELIVR_MODULE_RE = re.compile(
+    r"^/gh/bkstudy2025/neo-dashboard-kit@[^/]+/store/modules/[^/]+\.js$"
+)
+
+
+def _fetch_path_allowed(hostname: str, path: str) -> bool:
+    if hostname == "raw.githubusercontent.com":
+        return path == _RAW_INDEX_PATH
+    if hostname == "cdn.jsdelivr.net":
+        return bool(_JSDELIVR_MODULE_RE.match(path))
+    return False
 
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
 
@@ -199,6 +218,11 @@ async def ws_fetch(hass, connection, msg):
     if parsed.hostname not in ALLOWED_FETCH_HOSTS:
         connection.send_error(
             msg["id"], "host_not_allowed", f"Host nicht erlaubt: {parsed.hostname}"
+        )
+        return
+    if not _fetch_path_allowed(parsed.hostname, parsed.path):
+        connection.send_error(
+            msg["id"], "path_not_allowed", f"Pfad nicht erlaubt: {parsed.path}"
         )
         return
     try:
