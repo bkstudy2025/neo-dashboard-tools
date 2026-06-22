@@ -4,83 +4,60 @@
 
 <h1 align="center">Neo Dashboard Tools</h1>
 
-Companion-Integration für das [Neo Dashboard Kit](https://github.com/bkstudy2025/neo-dashboard-kit).
+<p align="center">
+  Companion integration for the
+  <a href="https://github.com/bkstudy2025/neo-dashboard-kit">Neo Dashboard Kit</a> —
+  file-based, server-side storage for dashboard modules.<br>
+  Companion-Integration für das
+  <a href="https://github.com/bkstudy2025/neo-dashboard-kit">Neo Dashboard Kit</a> —
+  dateibasierte, serverseitige Speicherung von Dashboard-Modulen.
+</p>
 
-Speichert Dashboard-**Module** (kleine JS-Karten, z.B. Premium-Karten) **dateibasiert
-auf dem Server** unter `config/neo_dashboard_modules/` und stellt sie dem Frontend
-über eine WebSocket-API bereit.
+<p align="center">
+  <a href="docs/de/README.md"><b>🇩🇪 Deutsch</b></a> ·
+  <a href="docs/en/README.md"><b>🇬🇧 English</b></a>
+</p>
 
-**Vorteile gegenüber Code-in-Config:**
-- Die Karten-/Dashboard-Config bleibt sauber (kein JS-Blob im YAML)
-- Module sind **geräteübergreifend** verfügbar
-- Zentrale Aktualisierung an einer Stelle
+<p align="center">
+  <img src="https://img.shields.io/badge/HACS-Integration-blue.svg" alt="HACS">
+  <img src="https://img.shields.io/github/v/release/bkstudy2025/neo-dashboard-tools?include_prereleases" alt="Version">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
+</p>
 
-## Installation
+---
 
-1. HACS → Integrationen → ⋮ → Benutzerdefinierte Repositories
-2. `https://github.com/bkstudy2025/neo-dashboard-tools` — Kategorie **Integration**
-3. **Neo Dashboard Tools** installieren → Home Assistant neu starten
-4. Einstellungen → Geräte & Dienste → **Integration hinzufügen** → „Neo Dashboard Tools"
+## 📚 Documentation / Dokumentation
 
-Danach erkennt das Neo Dashboard Kit die Integration automatisch und speichert
-Module über sie (statt im YAML).
-
-## Übersicht in Geräte & Dienste
-
-Die Integration legt ein Gerät **Neo Dashboard Tools** an mit **zwei** zusammengefassten
-Diagnose-Sensoren:
-
-- **„Module"** — Status = Anzahl installierter Module, Attribute = vollständige Liste
-  (`type`, `name`, `version`, `author`, `file` je Modul)
-- **„Version"** — installierte Integrations-Version
-
-> **Hinweis (ab v0.3.1):** Frühere Versionen legten **eine Diagnose-Entity pro Karte/Modul**
-> an. Das wurde durch die beiden Summary-Sensoren ersetzt. Alte, nicht mehr gültige
-> Entitäten (z. B. „Neo Klima", „Neo Kamera", „Neo Kalender" …) werden beim Laden der
-> Integration **automatisch aus der Entity-Registry entfernt** — einmal **Integration neu
-> laden** bzw. **Home Assistant neu starten** genügt, kein manuelles Aufräumen nötig.
-
-## Module verwalten
-
-**Konfigurieren** (am Gerät/Eintrag) → Menü:
-- **Neues Modul hinzufügen** — Code einfügen
-- **Modul bearbeiten** — vorhandenen Code ansehen/ändern (wird vorgeladen)
-- **Modul entfernen**
-
-## WebSocket-API
-
-| Befehl | Beschreibung | Rechte |
+| | 🇩🇪 Deutsch | 🇬🇧 English |
 |---|---|---|
-| `neo_dashboard_tools/list` | Alle Module `[{name, code}]` | – |
-| `neo_dashboard_tools/save` | Modul speichern `{name, code}` | Admin |
-| `neo_dashboard_tools/delete` | Modul löschen `{name}` | Admin |
+| Full guide | [Dokumentation](docs/de/README.md) | [Documentation](docs/en/README.md) |
+| Branding / Icons | [BRANDING.md](BRANDING.md) | [BRANDING.md](BRANDING.md) |
+| Security | [SECURITY.md](SECURITY.md) | [SECURITY.md](SECURITY.md) |
 
-## Speicherort
+---
 
-`config/neo_dashboard_modules/<name>.js`
+## ⚡ TL;DR
 
-## Logo & Icon in HACS / Home Assistant
+**Neo Dashboard Tools** stores Neo Dashboard **modules** (small JS cards, e.g.
+Premium cards) **as files on the server** under `config/neo_dashboard_modules/`
+and serves them to the frontend over a tightly-scoped WebSocket API — so your
+dashboard YAML stays clean and modules are available on every device.
 
-Seit **Home Assistant 2026.3** liefern benutzerdefinierte Integrationen ihr
-Marken-Icon **direkt im Repository** mit, unter
-`custom_components/neo_dashboard_tools/brand/` (`icon.png`, `logo.png`).
-Home Assistant stellt diese über den lokalen Brands-Proxy
-(`/api/brands/integration/neo_dashboard_tools/`) bereit.
+**Neo Dashboard Tools** speichert Neo-Dashboard-**Module** (kleine JS-Karten,
+z. B. Premium-Karten) **als Dateien auf dem Server** unter
+`config/neo_dashboard_modules/` und stellt sie dem Frontend über eine eng
+abgesicherte WebSocket-API bereit — so bleibt dein Dashboard-YAML sauber und
+Module sind auf jedem Gerät verfügbar.
 
-- ✅ **Einstellungen → Geräte & Dienste** und der **Einrichtungs-Dialog**
-  zeigen damit das Neo-Icon korrekt an.
-- ⚠️ Der **HACS-Download-Bildschirm** kann weiterhin „icon not available"
-  anzeigen. Das ist ein bekannter HACS-Fehler
-  ([hacs/integration#5223](https://github.com/hacs/integration/issues/5223)):
-  HACS lädt Repository-Icons noch über den alten CDN-Pfad
-  (`brands.home-assistant.io`) und nicht über den lokalen Proxy. Das lässt
-  sich **nicht aus dem Repository heraus** beheben — wir liefern bereits die
-  bestmöglichen Assets mit.
+1. Install via HACS (custom repository → category **Integration**).
+2. Restart Home Assistant, then add the integration via **Settings → Devices &
+   Services**.
+3. Neo Dashboard Kit detects it automatically and stores modules through it.
 
-Das `home-assistant/brands`-Repository nimmt für benutzerdefinierte
-Integrationen **keine Pull-Requests mehr** an; der Inline-Mechanismus oben ist
-der vorgesehene Weg.
+➡️ **Full guide:** [🇩🇪 Deutsch](docs/de/README.md) · [🇬🇧 English](docs/en/README.md)
 
-## Lizenz
+---
 
-MIT
+## 📄 License
+
+[MIT](LICENSE)
