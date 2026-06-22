@@ -54,6 +54,28 @@ installiert sind.
 
 `config/neo_dashboard_modules/<name>.js`
 
+## Logo & Icon in HACS / Home Assistant
+
+Seit **Home Assistant 2026.3** liefern benutzerdefinierte Integrationen ihr
+Marken-Icon **direkt im Repository** mit, unter
+`custom_components/neo_dashboard_tools/brand/` (`icon.png`, `logo.png`).
+Home Assistant stellt diese über den lokalen Brands-Proxy
+(`/api/brands/integration/neo_dashboard_tools/`) bereit.
+
+- ✅ **Einstellungen → Geräte & Dienste** und der **Einrichtungs-Dialog**
+  zeigen damit das Neo-Icon korrekt an.
+- ⚠️ Der **HACS-Download-Bildschirm** kann weiterhin „icon not available"
+  anzeigen. Das ist ein bekannter HACS-Fehler
+  ([hacs/integration#5223](https://github.com/hacs/integration/issues/5223)):
+  HACS lädt Repository-Icons noch über den alten CDN-Pfad
+  (`brands.home-assistant.io`) und nicht über den lokalen Proxy. Das lässt
+  sich **nicht aus dem Repository heraus** beheben — wir liefern bereits die
+  bestmöglichen Assets mit.
+
+Das `home-assistant/brands`-Repository nimmt für benutzerdefinierte
+Integrationen **keine Pull-Requests mehr** an; der Inline-Mechanismus oben ist
+der vorgesehene Weg.
+
 ## Lizenz
 
 MIT
