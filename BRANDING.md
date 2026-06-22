@@ -60,6 +60,11 @@ in the brands service:
    - `icon@2x.png` — 512×512 (optional hDPI)
    - `logo.png` — landscape, shortest side 128–256 (optional)
 
+   > 📦 **Ready-made package:** the exact files (and a step-by-step submission
+   > guide) are prepared in
+   > [`brands-submission/custom_integrations/neo_dashboard_tools/`](brands-submission/custom_integrations/neo_dashboard_tools/) —
+   > copy that folder straight into a `home-assistant/brands` fork.
+
    Once merged and the CDN propagates, HACS resolves
    `https://brands.home-assistant.io/_/neo_dashboard_tools/icon.png` and the icon
    appears in the HACS list.
