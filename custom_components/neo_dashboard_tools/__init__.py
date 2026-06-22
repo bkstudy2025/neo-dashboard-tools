@@ -36,7 +36,9 @@ PLATFORMS = ["sensor"]
 # scoped so it cannot be used as a generic SSRF proxy.
 MAX_FETCH_SIZE = 1_048_576  # 1 MiB — store index / module file response cap
 MAX_MODULE_SIZE = 1_048_576  # 1 MiB — saved module/card code cap
-ALLOWED_FETCH_HOSTS = frozenset({"raw.githubusercontent.com", "cdn.jsdelivr.net"})
+ALLOWED_FETCH_HOSTS = frozenset(
+    {"raw.githubusercontent.com", "cdn.jsdelivr.net", "api.github.com"}
+)
 # Exact content-types accepted in addition to any "text/*" type.
 ALLOWED_CONTENT_TYPES = frozenset(
     {
@@ -55,20 +57,34 @@ def _content_type_allowed(content_type: str) -> bool:
 
 # Per-host path allowlist: scope the proxy to this repo's store only, so it
 # cannot fetch foreign repos/paths even on an allowed host.
-# raw: only the live store index. jsDelivr: only store module/card .js files
-# (any ref, e.g. @main).
+# api: the live store index via the GitHub API (real-time, no CDN path cache).
+# raw: the live store index (fallback). jsDelivr: only store module/card .js
+# files (any ref, e.g. a pinned commit SHA).
 _RAW_INDEX_PATH = "/bkstudy2025/neo-dashboard-kit/main/store/index.json"
+_API_INDEX_PATH = "/repos/bkstudy2025/neo-dashboard-kit/contents/store/index.json"
 _JSDELIVR_MODULE_RE = re.compile(
     r"^/gh/bkstudy2025/neo-dashboard-kit@[^/]+/store/modules/[^/]+\.js$"
 )
 
 
 def _fetch_path_allowed(hostname: str, path: str) -> bool:
+    if hostname == "api.github.com":
+        return path == _API_INDEX_PATH
     if hostname == "raw.githubusercontent.com":
         return path == _RAW_INDEX_PATH
     if hostname == "cdn.jsdelivr.net":
         return bool(_JSDELIVR_MODULE_RE.match(path))
     return False
+
+
+def _fetch_headers(hostname: str) -> dict:
+    # GitHub requires a User-Agent. For the API, request the raw file body
+    # (not the base64 JSON envelope) and pin the API version.
+    headers = {"User-Agent": "neo-dashboard-tools"}
+    if hostname == "api.github.com":
+        headers["Accept"] = "application/vnd.github.raw"
+        headers["X-GitHub-Api-Version"] = "2022-11-28"
+    return headers
 
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
 
@@ -229,6 +245,7 @@ async def ws_fetch(hass, connection, msg):
         session = async_get_clientsession(hass)
         async with session.get(
             url,
+            headers=_fetch_headers(parsed.hostname),
             timeout=aiohttp.ClientTimeout(total=15),
             allow_redirects=False,
         ) as resp:
