@@ -1,0 +1,3 @@
+# Test-Abhängigkeiten (CI + lokal): bringt pytest, pytest-asyncio und ein
+# komplettes Test-Home-Assistant mit (Fixtures: hass, hass_ws_client, …).
+pytest-homeassistant-custom-component

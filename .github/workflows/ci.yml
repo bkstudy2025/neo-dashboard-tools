@@ -28,7 +28,26 @@ jobs:
       - name: Lint (ruff)
         run: |
           pip install ruff
-          ruff check custom_components/
+          ruff check custom_components/ tests/
+
+  # Smoke-Tests: Config-Flow, save/list/delete-Roundtrip über die WebSocket-API
+  # und die Allowlist-Regeln des fetch-Proxys (ohne Netzwerkzugriff).
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install test dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Run smoke tests
+        run: pytest
 
   # Offizieller HA-Check: validiert manifest.json, Übersetzungen, Config-Flow
   # u. a. gegen die aktuellen Integrations-Anforderungen.
