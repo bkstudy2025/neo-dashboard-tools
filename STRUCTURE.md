@@ -4,13 +4,16 @@ Home-Assistant-Integration, die als **Speicher-Backend + CORS-Proxy** für
 das Modul-System von Neo Dashboard Kit dient. Diese Datei hält das
 verbindliche Layout und die Konventionen fest.
 
-## Das Ökosystem (3 Repos)
+## Das Ökosystem (2 Repos)
 
 | Repo | Rolle | Installation in HA |
 |------|-------|--------------------|
-| **neo-dashboard-kit** | Frontend: Karten + Modul-System | HACS → Lovelace-Resource |
+| **neo-dashboard-kit** | Frontend: Karten + Modul-System **und** Store-Katalog (`store/`) | HACS → Lovelace-Resource |
 | **neo-dashboard-tools** (dieses Repo) | Integration: Modul-Persistenz + CORS-Proxy | HACS → `custom_components/` |
-| **neo-modules** | Store-Index + Community-Module | kein Install — über jsDelivr-CDN |
+
+> Der Store-Katalog (`store/index.json` + Module) liegt **im Kit-Repo** und wird
+> über jsDelivr/`raw.githubusercontent.com` geladen — es gibt **kein** separates
+> `neo-modules`-Repo (siehe STRUCTURE.md im Kit).
 
 ## Repo-Layout
 
@@ -23,6 +26,11 @@ custom_components/neo_dashboard_tools/   ← die Integration (HA-Standard)
   manifest.json        Integration-Metadaten + Version
   strings.json         UI-Texte (Quelle)
   translations/        Übersetzungen (en.json, …)
+tests/                 Smoke-Tests (pytest-homeassistant-custom-component)
+  conftest.py          aktiviert custom_components/ im Test-HA
+  test_smoke.py        Config-Flow · WS-Roundtrip · fetch-Allowlist
+pytest.ini             pytest-Konfiguration (asyncio_mode = auto)
+requirements-test.txt  Test-Abhängigkeiten (CI + lokal)
 hacs.json              HACS-Metadaten
 icon.png / logo.png    Branding
 README.md / STRUCTURE.md

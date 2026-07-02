@@ -1,0 +1,18 @@
+# Hält GitHub Actions und die Test-Abhängigkeiten aktuell (wöchentlich, gebündelt).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      test-deps:
+        patterns: ["*"]
