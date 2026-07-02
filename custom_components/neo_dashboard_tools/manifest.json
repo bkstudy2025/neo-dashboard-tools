@@ -1,13 +1,13 @@
 {
   "domain": "neo_dashboard_tools",
   "name": "Neo Dashboard Tools",
-  "version": "1.0.0-rc.1",
-  "documentation": "https://github.com/bkstudy2025/neo-dashboard-tools",
-  "issue_tracker": "https://github.com/bkstudy2025/neo-dashboard-tools/issues",
   "codeowners": ["@bkstudy2025"],
   "config_flow": true,
   "dependencies": ["websocket_api"],
+  "documentation": "https://github.com/bkstudy2025/neo-dashboard-tools",
   "integration_type": "service",
   "iot_class": "local_push",
-  "requirements": []
+  "issue_tracker": "https://github.com/bkstudy2025/neo-dashboard-tools/issues",
+  "requirements": [],
+  "version": "1.0.0-rc.1"
 }

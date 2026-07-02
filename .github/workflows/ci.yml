@@ -1,8 +1,11 @@
 name: CI
 
+# push nur auf main — PR-Branches sind über den pull_request-Trigger abgedeckt
+# (beide zusammen ließen jeden PR-Commit doppelt laufen).
 on:
   pull_request:
   push:
+    branches: [main]
 
 permissions:
   contents: read
