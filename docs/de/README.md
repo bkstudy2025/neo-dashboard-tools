@@ -195,7 +195,9 @@ Beide werden getrennt über HACS installiert. Das Kit funktioniert eigenständig
 Tools ergänzt die server-seitige Modulspeicherung. Empfohlene Kombination:
 gleiche bzw. klar kompatible Release-Stände (siehe Release-Notes der Repos).
 
-> **Aktuelle Kompatibilität:** Tools `v1.0.0-rc.1` ↔ Kit `v1.0.0-rc.1`.
+> **Kompatibilität:** Die jeweils aktuellen Release-Stände beider Repos (gleiche
+> `1.x`-Serie) sind miteinander kompatibel. Abweichungen stehen in den
+> Release-Notes des jeweiligen Releases.
 
 ---
 

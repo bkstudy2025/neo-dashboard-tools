@@ -191,7 +191,9 @@ Both are installed separately via HACS. The Kit works standalone; Tools adds the
 server-side module storage. Recommended combination: matching or clearly
 compatible release levels (see each repo's release notes).
 
-> **Current compatibility:** Tools `v1.0.0-rc.1` ↔ Kit `v1.0.0-rc.1`.
+> **Compatibility:** The latest release of each repo (same `1.x` series) is
+> compatible with the other. Any exceptions are called out in the release notes
+> of the respective release.
 
 ---
 
