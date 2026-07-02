@@ -17,6 +17,9 @@ This integration is deliberately tightly scoped. Full details:
 - **Admin-only writes:** `save` and `delete` WebSocket commands require admin
   rights. Filenames are sanitised (`a–z`, `0–9`, `-`, `_`, max 64 chars) to
   prevent path traversal. Saved modules are capped at **1 MiB**.
+- **`list` is read-only and available to every logged-in user** (by design:
+  every dashboard user needs the module code to render the cards). Do not
+  store secrets in module files — treat them as visible to all HA users.
 - **Stored modules are never executed on the server** — they are plain JS files
   served to the frontend.
 - **The `fetch` proxy is not a general-purpose proxy.** It is restricted to:

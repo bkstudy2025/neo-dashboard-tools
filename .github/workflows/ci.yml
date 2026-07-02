@@ -1,8 +1,11 @@
 name: CI
 
+# push nur auf main — PR-Branches sind über den pull_request-Trigger abgedeckt
+# (beide zusammen ließen jeden PR-Commit doppelt laufen).
 on:
   pull_request:
   push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -21,3 +24,35 @@ jobs:
 
       - name: Compile (syntax check)
         run: python -m compileall custom_components/neo_dashboard_tools
+
+      - name: Lint (ruff)
+        run: |
+          pip install ruff
+          ruff check custom_components/
+
+  # Offizieller HA-Check: validiert manifest.json, Übersetzungen, Config-Flow
+  # u. a. gegen die aktuellen Integrations-Anforderungen.
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@master
+
+  # HACS-Check: validiert hacs.json, Repo-Struktur und Release-Anforderungen,
+  # damit die Integration in HACS installierbar bleibt.
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # "brands" ist ignoriert, bis das Paket aus brands-submission/ im Repo
+      # home-assistant/brands gemerged ist — danach die Zeile entfernen.
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: integration
+          ignore: brands
