@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import glob
+import hashlib
 import logging
 import os
 import re
@@ -96,8 +97,16 @@ def _modules_dir(hass: HomeAssistant) -> str:
 
 
 def _safe_name(name: str) -> str:
-    name = "".join(c for c in (name or "") if c.isalnum() or c in "-_")
-    return (name or "module")[:64]
+    original = name or ""
+    cleaned = "".join(c for c in original if c.isalnum() or c in "-_")
+    if not cleaned:
+        # Reine Sonderzeichen/Leerzeichen → früher fielen ALLE solchen Namen auf
+        # denselben Dateinamen "module" und überschrieben sich still gegenseitig.
+        # Stattdessen einen stabilen, aus dem Originalnamen abgeleiteten Namen
+        # verwenden, damit unterschiedliche Namen unterschiedliche Dateien behalten.
+        digest = hashlib.sha1(original.encode("utf-8")).hexdigest()[:8]
+        cleaned = f"module-{digest}"
+    return cleaned[:64]
 
 
 def _read_all(hass: HomeAssistant) -> list[dict]:
