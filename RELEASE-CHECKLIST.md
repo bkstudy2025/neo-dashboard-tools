@@ -3,7 +3,7 @@
 A practical pre-release checklist. Tick everything before tagging a release.
 
 > **Release target:** a stable companion version aligned with Neo Dashboard Kit's
-> `v1.0.0-rc.1`. Document clear compatibility in the release notes.
+> `v1.0.0`. Document clear compatibility in the release notes.
 
 ---
 
