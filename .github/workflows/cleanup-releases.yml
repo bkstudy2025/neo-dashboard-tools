@@ -1,0 +1,56 @@
+name: One-shot release cleanup
+
+# Einmalig manuell auslösbar: löscht ALLE GitHub-Releases (samt Tag) AUSSER dem
+# gewählten Keep-Tag (Standard: v1.0.0), inklusive alter Betas/RCs und alter
+# stabiler v0.x-Releases. Am Ende entfernt sich der Workflow selbst wieder.
+# Bewusst NUR workflow_dispatch — läuft nie automatisch.
+on:
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: "Release/Tag, der behalten wird"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Alle Releases + Tags außer Keep löschen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: ${{ github.event.inputs.keep }}
+        run: |
+          echo "Behalte nur: $KEEP"
+          gh release list --limit 200 --json tagName --jq '.[].tagName' \
+          | while read -r tag; do
+              [ -z "$tag" ] && continue
+              if [ "$tag" != "$KEEP" ]; then
+                echo "Lösche Release + Tag: $tag"
+                gh release delete "$tag" --yes --cleanup-tag || echo "  fehlgeschlagen: $tag"
+              fi
+            done
+          # Übrig gebliebene Tags ohne Release ebenfalls entfernen.
+          for tag in $(git tag -l); do
+            if [ "$tag" != "$KEEP" ]; then
+              echo "Lösche verwaisten Tag: $tag"
+              git push origin ":refs/tags/$tag" || true
+            fi
+          done
+          echo "Fertig."
+
+      - name: Diesen Workflow selbst entfernen (best effort)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/cleanup-releases.yml
+          git commit -m "chore: einmaligen Release-Cleanup-Workflow wieder entfernen"
+          git push origin HEAD:${{ github.ref_name }} \
+            || echo "Selbst-Entfernen blockiert (Branch-Schutz) — bitte per Folge-PR entfernen."
