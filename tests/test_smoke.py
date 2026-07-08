@@ -64,6 +64,19 @@ async def test_ws_save_sanitizes_filename(hass, hass_ws_client):
     assert msg["success"]
 
 
+async def test_safe_name_distinct_symbol_names_do_not_collide():
+    """Namen aus reinen Sonderzeichen kollidieren nicht mehr auf 'module'."""
+    from custom_components.neo_dashboard_tools import _safe_name
+
+    a = _safe_name("!!!")
+    b = _safe_name("???")
+    assert a != b  # früher beide → "module"
+    assert a.startswith("module-") and b.startswith("module-")
+    # Stabil (deterministisch) und für normale Slugs unverändert.
+    assert _safe_name("!!!") == a
+    assert _safe_name("neo-weather") == "neo-weather"
+
+
 async def test_ws_save_rejects_oversized_code(hass, hass_ws_client):
     """Module über dem 1-MiB-Limit werden abgelehnt."""
     assert await async_setup_component(hass, DOMAIN, {})
